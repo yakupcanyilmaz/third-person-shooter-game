@@ -7,13 +7,6 @@
 #include "BulletHitInterface.h"
 #include "Target.generated.h"
 
-enum class ETargetState : uint8
-{
-	ETS_Still UMETA(DisplayName = "Still"),
-	ETS_Shot UMETA(DisplayName = "Shot"),
-
-	EIS_MAX UMETA(DisplayName = "DefaultMAX")
-};
 
 UCLASS()
 class WESTERNSHOOTER_API ATarget : public AActor, public IBulletHitInterface
@@ -32,24 +25,24 @@ protected:
 
 private:
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Target Properties", meta = (AllowPrivateAccess = "true"))
+	UStaticMeshComponent* TargetMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Target Properties", meta = (AllowPrivateAccess = "true"))
-		UStaticMeshComponent* TargetMesh;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Target Properties", meta = (AllowPrivateAccess = "true"))
-		TSubclassOf<class AActor> DestroyedVersion;
+	TSubclassOf<class AActor> DestroyedVersion;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
-		class USoundCue* HitSound;
+	class USoundCue* HitSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Target Properties", meta = (AllowPrivateAccess = "true"))
-		int32 MaterialIndex;
+	int32 MaterialIndex;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Target Properties", meta = (AllowPrivateAccess = "true"))
-		UMaterialInstanceDynamic* DynamicMaterialInstance;
+	UMaterialInstanceDynamic* DynamicMaterialInstance;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Target Properties", meta = (AllowPrivateAccess = "true"))
-		UMaterialInstance* MaterialInstance;
+	UMaterialInstance* MaterialInstance;
+
 
 public:	
 	// Called every frame
@@ -63,5 +56,5 @@ public:
 	void EnableGlowMaterial();
 	void DisableGlowMaterial();
 
-	virtual void BulletHit_Implementation(FHitResult HitResult) override;
+	virtual void BulletHit_Implementation() override;
 };

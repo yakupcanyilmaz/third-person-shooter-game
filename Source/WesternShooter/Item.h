@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "PickupInterface.h"
 #include "Item.generated.h"
 
 UENUM(BlueprintType)
@@ -18,7 +19,7 @@ enum class EItemState : uint8
 };
 
 UCLASS()
-class WESTERNSHOOTER_API AItem : public AActor
+class WESTERNSHOOTER_API AItem : public AActor, public IPickupInterface
 {
 	GENERATED_BODY()
 
@@ -48,9 +49,9 @@ protected:
 			UPrimitiveComponent* OtherComp,
 			int32 OtherBodyIndex);
 
-	virtual void SetItemProperties(EItemState State);
+	void InitializeItem();
 
-	virtual void InitializeCustomDepth();
+	virtual void SetItemProperties(EItemState State);
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 
@@ -60,40 +61,46 @@ public:
 
 protected:
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-		class USkeletalMeshComponent* ItemMesh;
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	class USkeletalMeshComponent* ItemMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-		class UBoxComponent* CollisionBox;
+	class UBoxComponent* CollisionBox;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	class UWidgetComponent* PickupWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-		class UWidgetComponent* PickupWidget;
+	class USphereComponent* AreaSphere;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-		class USphereComponent* AreaSphere;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-		FString ItemName;
+	FString ItemName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-		int32 ItemCount;
+	int32 ItemCount;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-		EItemState ItemState;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	EItemState ItemState;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-		class USoundCue* PickupSound;
+	class USoundCue* PickupSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	int32 MaterialIndex;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	UMaterialInstanceDynamic* DynamicMaterialInstance;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	UMaterialInstance* MaterialInstance;
 
 	bool bCanChangeCustomDepth;
+
+	void SetPickupWidgetVisibility(bool Bool);
+	UFUNCTION(Server, Unreliable)
+	void ServerSetPickupWidgetVisibility(bool Bool);
+	UFUNCTION(Client, Unreliable)
+	void ClientSetPickupWidgetVisibility(bool Bool);
 
 public:
 
@@ -101,14 +108,27 @@ public:
 	FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
 	FORCEINLINE UBoxComponent* GetCollisionBox() { return CollisionBox; }
 	FORCEINLINE EItemState GetItemState() const { return ItemState; }
+
 	void SetItemState(EItemState State);
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSetItemState(EItemState State);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetItemState(EItemState State);
+
 	FORCEINLINE USkeletalMeshComponent* GetItemMesh() const { return ItemMesh; }
 	FORCEINLINE USoundCue* GetPickupSound() const { return PickupSound; }
 	FORCEINLINE int32 GetItemCount() const { return ItemCount; }
 
 	virtual void EnableCustomDepth();
+	UFUNCTION(Server, Unreliable)
+	void ServerEnableItemMeshCustomDepth();
+	UFUNCTION(Client, Unreliable)
+	void ClientEnableItemMeshCustomDepth();
+
 	virtual void DisableCustomDepth();
 
 	void EnableGlowMaterial();
 	void DisableGlowMaterial();
+
+	void SetGlowBlendAlphaValue(int8 Value);
 };

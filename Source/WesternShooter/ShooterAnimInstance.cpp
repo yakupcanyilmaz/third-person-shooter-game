@@ -6,7 +6,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
-
 UShooterAnimInstance::UShooterAnimInstance() :
 	Speed(0.f),
 	bIsInAir(false),
@@ -77,8 +76,15 @@ void UShooterAnimInstance::NativeInitializeAnimation()
 
 void UShooterAnimInstance::TurnInPLace(float DeltaTime)
 {
-	//Pitch = ShooterCharacter->GetBaseAimRotation().Pitch;
-	Pitch = (ShooterCharacter->GetControlRotation() - ShooterCharacter->GetActorRotation()).GetNormalized().Pitch;
+	if (ShooterCharacter->GetBaseAimRotation().Pitch >= 180.f)
+	{
+		Pitch = ShooterCharacter->GetBaseAimRotation().Pitch - 360.f;
+	}
+	else
+	{
+		Pitch = ShooterCharacter->GetBaseAimRotation().Pitch;
+	}
+	//Pitch = (ShooterCharacter->GetControlRotation() - ShooterCharacter->GetActorRotation()).GetNormalized().Pitch;
 
 	if (Speed > 0 || bIsInAir)
 	{

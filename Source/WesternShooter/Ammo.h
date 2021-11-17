@@ -42,5 +42,12 @@ public:
 	FORCEINLINE EAmmoType GetAmmoType() const { return AmmoType; }
 
 	virtual void EnableCustomDepth() override;
+	UFUNCTION(Server, Unreliable)
+	void ServerEnableAmmoMeshCustomDepth();
+	UFUNCTION(Client, Unreliable)
+	void ClientEnableAmmoMeshCustomDepth();
+
 	virtual void DisableCustomDepth() override;
+
+	virtual void OnPickup_Implementation() override;
 };

@@ -6,6 +6,7 @@
 #include "Components/WidgetComponent.h"
 #include "Components/SphereComponent.h"
 #include "ShooterCharacter.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AItem::AItem() :
@@ -24,10 +25,12 @@ AItem::AItem() :
 	CollisionBox->SetupAttachment(ItemMesh);
 
 	PickupWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PickupWidget"));
-	PickupWidget->SetupAttachment(GetRootComponent());
+	PickupWidget->SetupAttachment(GetRootComponent());	
 
 	AreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AreaSphere"));
 	AreaSphere->SetupAttachment(GetRootComponent());
+
+	SetReplicates(true);
 }
 
 // Called when the game starts or when spawned
@@ -35,17 +38,21 @@ void AItem::BeginPlay()
 {
 	Super::BeginPlay();
 
+	InitializeItem();
+}
+
+void AItem::InitializeItem()
+{
 	if (PickupWidget)
 	{
 		PickupWidget->SetVisibility(false);
 	}
 
 	AreaSphere->OnComponentBeginOverlap.AddDynamic(this, &AItem::OnSphereOverlap);
-	AreaSphere->OnComponentEndOverlap.AddDynamic(this, &AItem::OnSphereEndOverlap);
+	AreaSphere->OnComponentEndOverlap.AddDynamic(this, &AItem::OnSphereEndOverlap);	
 
 	SetItemProperties(ItemState);
-
-	InitializeCustomDepth();
+	DisableCustomDepth();
 }
 
 void AItem::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -55,10 +62,14 @@ void AItem::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 		AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(OtherActor);
 		if (ShooterCharacter)
 		{
-			ShooterCharacter->IncrementOverlappedItemCount(1);
-			ShooterCharacter->SetOverlappedItem(this);
-			PickupWidget->SetVisibility(true);
-			EnableCustomDepth();
+			if (ItemState != EItemState::EIS_Equipped)
+			{
+				SetOwner(ShooterCharacter);
+				ShooterCharacter->IncrementOverlappedItemCount(1);
+				ShooterCharacter->SetOverlappedItem(this);
+				EnableCustomDepth();
+				SetPickupWidgetVisibility(true);
+			}
 		}
 	}
 }
@@ -70,61 +81,62 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 		AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(OtherActor);
 		if (ShooterCharacter)
 		{
-			ShooterCharacter->SetOverlappedItem(nullptr);
-			ShooterCharacter->IncrementOverlappedItemCount(-1);
-			PickupWidget->SetVisibility(false);
-			DisableCustomDepth();
+			if (ItemState != EItemState::EIS_Equipped)
+			{
+				ShooterCharacter->IncrementOverlappedItemCount(-1);
+				ShooterCharacter->SetOverlappedItem(nullptr);
+				DisableCustomDepth();
+				SetPickupWidgetVisibility(false);
+			}
 		}
 	}
 }
 
+void AItem::OnConstruction(const FTransform& Transform)
+{
+	SetGlowBlendAlphaValue(0);
+}
+
 void AItem::EnableCustomDepth()
 {
-	if (bCanChangeCustomDepth)
-	{
-		ItemMesh->SetRenderCustomDepth(true);
-	}
+	ServerEnableItemMeshCustomDepth();
+}
+
+void AItem::ServerEnableItemMeshCustomDepth_Implementation()
+{
+	ClientEnableItemMeshCustomDepth();
+}
+
+void AItem::ClientEnableItemMeshCustomDepth_Implementation()
+{
+	if (bCanChangeCustomDepth) ItemMesh->SetRenderCustomDepth(true);
 }
 
 void AItem::DisableCustomDepth()
 {
-	if (bCanChangeCustomDepth)
-	{
-		ItemMesh->SetRenderCustomDepth(false);
-	}
+	if (bCanChangeCustomDepth) ItemMesh->SetRenderCustomDepth(false);
 }
 
-void AItem::InitializeCustomDepth()
+void AItem::EnableGlowMaterial()
 {
-	DisableCustomDepth();
+	//ServerEnableGlowMaterial();
+	SetGlowBlendAlphaValue(0);
 }
 
-void AItem::OnConstruction(const FTransform& Transform)
+void AItem::DisableGlowMaterial()
+{
+	SetGlowBlendAlphaValue(1);
+}
+
+void AItem::SetGlowBlendAlphaValue(int8 Value)
 {
 	if (MaterialInstance)
 	{
 		DynamicMaterialInstance = UMaterialInstanceDynamic::Create(MaterialInstance, this);
 		ItemMesh->SetMaterial(MaterialIndex, DynamicMaterialInstance);
 	}
-	EnableGlowMaterial();
+	if (DynamicMaterialInstance) DynamicMaterialInstance->SetScalarParameterValue(TEXT("GlowBlendAlpha"), Value);
 }
-
-void AItem::EnableGlowMaterial()
-{
-	if (DynamicMaterialInstance)
-	{
-		DynamicMaterialInstance->SetScalarParameterValue(TEXT("GlowBlendAlpha"), 0);
-	}
-}
-
-void AItem::DisableGlowMaterial()
-{
-	if (DynamicMaterialInstance)
-	{
-		DynamicMaterialInstance->SetScalarParameterValue(TEXT("GlowBlendAlpha"), 1);
-	}
-}
-
 
 void AItem::SetItemProperties(EItemState State)
 {
@@ -146,6 +158,7 @@ void AItem::SetItemProperties(EItemState State)
 			ECollisionChannel::ECC_Visibility,
 			ECollisionResponse::ECR_Block);
 		CollisionBox->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		EnableGlowMaterial();
 		break;
 	case EItemState::EIS_Equipped:
 		PickupWidget->SetVisibility(false);
@@ -161,6 +174,8 @@ void AItem::SetItemProperties(EItemState State)
 		// Set CollisionBox properties
 		CollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		CollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		DisableCustomDepth();
+		DisableGlowMaterial();
 		break;
 	case EItemState::EIS_Falling:
 		// Set mesh properties
@@ -191,11 +206,47 @@ void AItem::Tick(float DeltaTime)
 
 void AItem::SetItemState(EItemState State)
 {
+	ServerSetItemState(State);
+}
+
+void AItem::ServerSetItemState_Implementation(EItemState State)
+{
+	MulticastSetItemState(State);
+}
+
+bool AItem::ServerSetItemState_Validate(EItemState State)
+{
+	return true;
+}
+
+void AItem::MulticastSetItemState_Implementation(EItemState State)
+{
 	ItemState = State;
 	SetItemProperties(State);
 }
 
+void AItem::SetPickupWidgetVisibility(bool Bool)
+{
+	ServerSetPickupWidgetVisibility(Bool);
+}
 
+void AItem::ServerSetPickupWidgetVisibility_Implementation(bool Bool)
+{
+	ClientSetPickupWidgetVisibility(Bool);
+}
 
+void AItem::ClientSetPickupWidgetVisibility_Implementation(bool Bool)
+{
+	PickupWidget->SetVisibility(Bool);
+}
 
+void AItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(AItem, ItemState);
+	DOREPLIFETIME(AItem, ItemMesh);
+	DOREPLIFETIME(AItem, DynamicMaterialInstance);
+	DOREPLIFETIME(AItem, MaterialInstance);
+	DOREPLIFETIME(AItem, PickupWidget);
+}

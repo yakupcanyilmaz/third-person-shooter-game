@@ -33,6 +33,31 @@ public:
 protected:
 	void StopFalling();
 
+	void PlayFireEffects(FVector TraceEnd);
+
+	void PlayFireSound();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerFire();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastFire();
+
+
+	UFUNCTION(Server, Reliable)
+	void ServerShowTargetScore(FVector Location);
+	UFUNCTION(Client, Reliable)
+	void ClientShowTargetScore(FVector Location);
+
+	void OnHit();
+
+	UFUNCTION(BlueprintCallable)
+	void StoreScoreNumbers(class UUserWidget* ScoreNumber, FVector Location);
+
+	UFUNCTION()
+	void DestroyScoreNumber(UUserWidget* ScoreNumber);
+
+	void UpdateScoreNumbers();
+
 private:
 	FTimerHandle ThrowWeaponTimer;
 	float ThrowWeaponTime;
@@ -53,21 +78,47 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
 	FName ReloadMontageSection;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = DataTable, meta = (AllowPrivateAccess = "true"))
-		float AutoFireRate;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+	float AutoFireRate;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
-		UParticleSystem* MuzzleFlash;
+	UParticleSystem* MuzzleFlash;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
-		USoundCue* FireSound;
+	UParticleSystem* ImpactParticles;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
-		bool bAutomatic;
+	UParticleSystem* BeamParticles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+	USoundCue* FireSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties", meta = (AllowPrivateAccess = "true"))
+	bool bAutomatic;
+
+	/*UPROPERTY(ReplicatedUsing=OnHitLocation)
+	FVector_NetQuantize HitLocation;*/
+
+	FHitResult OutHitResult;
+
+	UPROPERTY(Replicated)
+	FVector_NetQuantize HitLocation;
+
+	UFUNCTION()
+	void OnHitLocation();
+
+	bool LineTrace(FHitResult& HitResult);
+
+	UPROPERTY(Replicated)
+	bool TargetHit;
+
+	UPROPERTY(VisibleAnywhere, Category = Widgets, meta = (AllowPrivateAccess = "true"))
+	TMap<UUserWidget*, FVector> ScoreNumbers;
+
+	UPROPERTY(EditAnywhere, Category = Widgets, meta = (AllowPrivateAccess = "true"))
+	float ScoreNumberDestroyTime;
 
 public:
-
-	void ThrowWeapon();
 
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }
@@ -79,10 +130,14 @@ public:
 	FORCEINLINE float GetAutoFireRate() const { return AutoFireRate; }
 	FORCEINLINE bool GetAutomatic() const { return bAutomatic; }
 
+	void Fire();
 
+	void ThrowWeapon();
 	void DecrementAmmo();
-
 	void ReloadAmmo(int32 Amount);
 
 	bool ClipIsFull();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnShowScoreNumbers(FVector Location);
 };

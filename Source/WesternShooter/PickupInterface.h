@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "BulletHitInterface.generated.h"
+#include "PickupInterface.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class UBulletHitInterface : public UInterface
+class UPickupInterface : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -16,13 +16,12 @@ class UBulletHitInterface : public UInterface
 /**
  * 
  */
-class WESTERNSHOOTER_API IBulletHitInterface
+class WESTERNSHOOTER_API IPickupInterface
 {
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void BulletHit();
-
+	UFUNCTION(BlueprintNativeEvent)
+	void OnPickup();
 };

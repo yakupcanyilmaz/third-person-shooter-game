@@ -40,7 +40,8 @@ protected:
 	void LookUp(float Value);
 
 	void FireWeapon();
-	bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FHitResult& OutHitResult);
+	//bool GetBeamEndLocation(const FVector& MuzzleSocketLocation, FHitResult& OutHitResult);
+	//bool TraceUnderCrosshairs(FHitResult& OutHitResult, FVector& OutHitLocation);
 
 	void AimingButtonPressed();
 	void AimingButtonReleased();
@@ -61,13 +62,15 @@ protected:
 	UFUNCTION()
 	void FinishCrosshairBulletFire();
 
-	bool TraceUnderCrosshairs(FHitResult& OutHitResult, FVector& OutHitLocation);
-	void TraceForItems();
+	UFUNCTION()
+	void EquipDefaultWeapon();
+	void EquipWeapon(class AWeapon* WeaponToEquip);
 
-	class AWeapon* SpawnDefaultWeapon();
-	void EquipWeapon(AWeapon* WeaponToEquip);
 	void DropWeapon();
+
 	void SwapWeapon(AWeapon* WeaponToSwap);
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSwapWeapon(AWeapon* WeaponToSwap);
 
 	void SelectButtonPressed();
 	void SelectButtonReleased();
@@ -75,27 +78,52 @@ protected:
 	void InitializeAmmoMap();
 
 	bool WeaponHasAmmo();
-	void PlayFireSound();
 
 	void SendBullet();
+
+	void PlayAnimationMontage(class UAnimMontage* AnimMontage);
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerSendBullet();
-
+	void ServerPlayAnimationMontage(UAnimMontage* AnimMontage);
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastDestroyTarget(ATarget* Target);
+	void MulticastPlayAnimationMontage(UAnimMontage* AnimMontage);
 
-	void PlayGunfireMontage();
 	void ReloadButtonPressed();
 	void ReloadWeapon();
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerReloadWeapon();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastReloadWeapon();
 	bool CarryingAmmo();
 
 	void Aim();
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerAim();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastAim();
+
 	void StopAiming();
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerStopAiming();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastStopAiming();
 
 	void Sprint();
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSprint();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSprint();
+
 	void StopSprinting();
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerStopSprinting();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastStopSprinting();
 
 	void PickupAmmo(class AAmmo* Ammo);
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerPickupAmmo(AAmmo* Ammo);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPickupAmmo(AAmmo* Ammo);
 
 	bool bAimingButtonPressed;
 	bool bFireButtonPressed;
@@ -115,79 +143,73 @@ public:
 private:
 
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class USpringArmComponent* CameraBoom;
+	class USpringArmComponent* CameraBoom;
 
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class UCameraComponent* FollowCamera;
+	class UCameraComponent* FollowCamera;
 
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		float BaseTurnRate;
+	float BaseTurnRate;
 
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		float BaseLookUpRate;
+	float BaseLookUpRate;
 
 	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		float SprintTurnRate;
+	float SprintTurnRate;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		float HipTurnRate;
+	float HipTurnRate;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		float HipLookUpRate;
+	float HipLookUpRate;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		float AimingTurnRate;
+	float AimingTurnRate;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		float AimingLookUpRate;
+	float AimingLookUpRate;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"), meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
-		float MouseHipTurnRate;
+	float MouseHipTurnRate;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"), meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
-		float MouseHipLookUpRate;
+	float MouseHipLookUpRate;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"), meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
-		float MouseAimingTurnRate;
+	float MouseAimingTurnRate;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"), meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
-		float MouseAimingLookUpRate;
+	float MouseAimingLookUpRate;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
-		ECombatState CombatState;
+	ECombatState CombatState;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-		class UAnimMontage* HipReloadMontage;
+	class UAnimMontage* ReloadMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-		UAnimMontage* HipFireMontage;
+	UAnimMontage* HipFireMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-		UAnimMontage* HipAimFireMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-		UParticleSystem* ImpactParticles;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-		UParticleSystem* BeamParticles;
+	UAnimMontage* AimFireMontage;
 
 	UFUNCTION(BlueprintCallable)
 	void FinishReloading();
 
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
-		bool bAiming;
+	UPROPERTY(Replicated, VisibleAnyWhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	bool bAiming;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-		float BaseMovementSpeed;
+	float BaseMovementSpeed;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-		float CrouchMovementSpeed;
+	float CrouchMovementSpeed;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-		float SprintMovementSpeed;
+	float SprintMovementSpeed;
 
 	UPROPERTY(VisibleAnyWhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
-		bool bSprinting;
+	bool bSprinting;
 
 	// Default camera field of view value
 	float CameraDefaultFOV;
@@ -200,48 +222,42 @@ private:
 
 	// Interp speed for zooming when aiming
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-		float ZoomInterpSpeed;
+	float ZoomInterpSpeed;
 
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
-		float CrosshairSpreadMultiplier;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
+	float CrosshairSpreadMultiplier;
 
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
-		float CrosshairVelocityFactor;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
+	float CrosshairVelocityFactor;
 
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
-		float CrosshairInAirFactor;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
+	float CrosshairInAirFactor;
 
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
-		float CrosshairAimFactor;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
+	float CrosshairAimFactor;
 
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
-		float CrosshairShootingFactor;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Crosshairs, meta = (AllowPrivateAccess = "true"))
+	float CrosshairShootingFactor;
 
 	float ShootTimeDuration;
 	bool bFiringBullet;
 	FTimerHandle CrosshairShootTimer;
 
-	bool bShouldTraceForItems;
-
 	int8 OverlappedItemCount;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
-		class AItem* OverlappedItem;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+	class AItem* OverlappedItem;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
-		class AItem* TraceHitItemLastFrame;
-
-	UPROPERTY(VisibleAnyWhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
-		AWeapon* EquippedWeapon;
+	UPROPERTY(Replicated, VisibleAnyWhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	AWeapon* EquippedWeapon;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
-		TSubclassOf<AWeapon> DefaultWeaponClass;
+	TSubclassOf<AWeapon> DefaultWeaponClass;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
-		AItem* TraceHitItem;
+	AWeapon* DefaultWeapon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
-		TMap<EAmmoType, int32> AmmoMap;
+	TMap<EAmmoType, int32> AmmoMap;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Items, meta = (AllowPrivateAccess = "true"))
 	int32 StartingRifleAmmo;
@@ -250,16 +266,16 @@ private:
 	int32 StartingShotgunAmmo;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Widgets, meta = (AllowPrivateAccess = "true"))
-		TSubclassOf<class UUserWidget> HUDOverlayClass;
+	TSubclassOf<class UUserWidget> HUDOverlayClass;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Widgets, meta = (AllowPrivateAccess = "true"))
-		UUserWidget* HUDOverlay;
+	UUserWidget* HUDOverlay;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Widgets, meta = (AllowPrivateAccess = "true"))
-		TSubclassOf<class UUserWidget> PauseMenuClass;
+	TSubclassOf<class UUserWidget> PauseMenuClass;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Widgets, meta = (AllowPrivateAccess = "true"))
-		UUserWidget* PauseMenu;
+	UUserWidget* PauseMenu;
 
 	class APlayerController* ShooterPlayerController;
 
@@ -269,12 +285,17 @@ public:
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE bool GetAiming() const { return bAiming; }
 	FORCEINLINE bool GetSprinting() const { return bSprinting; }
+	//FORCEINLINE void SetOverlappedItem(AItem* Item) { OverlappedItem = Item; }
+
 	UFUNCTION(BlueprintCallable)
-		float GetCrosshairSpreadMultiplier() const;
+	float GetCrosshairSpreadMultiplier() const;
+
+	void SetOverlappedItem(AItem* Item);
+
 	void IncrementOverlappedItemCount(int8 Amount);
 
-	FORCEINLINE void SetOverlappedItem(AItem* Item) { OverlappedItem = Item; }
+	void DestroyTarget(class ATarget* Target);
+	void DestroyItem(class AItem* Item);
 
-	UFUNCTION(Server, Reliable, WithValidation)
-		void ServerDestroyTarget(ATarget* Target);
+	virtual FVector GetPawnViewLocation() const override;
 };

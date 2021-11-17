@@ -5,14 +5,18 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "ShooterCharacter.h"
+#include "Net/UnrealNetwork.h"
+#include "ShooterGameModeBase.h"
+#include "ShooterGameStateBase.h"
+
 
 // Sets default values
-ATarget::ATarget()
+ATarget::ATarget() : 
+	MaterialIndex(0)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	MaterialIndex = 0,
 	SetReplicates(true);
 
 	TargetMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TargetMesh"));
@@ -24,7 +28,6 @@ void ATarget::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	EnableGlowMaterial();
 }
 
 // Called every frame
@@ -65,14 +68,11 @@ void ATarget::SpawnDestroyedVersion()
 	GetWorld()->SpawnActor<AActor>(DestroyedVersion, GetActorLocation(), GetActorRotation());
 }
 
-void ATarget::BulletHit_Implementation(FHitResult HitResult)
+void ATarget::BulletHit_Implementation()
 {
 	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 	if (ShooterCharacter)
 	{
-		ShooterCharacter->ServerDestroyTarget(this);
+		ShooterCharacter->DestroyTarget(this);
 	}
 }
-
-
-

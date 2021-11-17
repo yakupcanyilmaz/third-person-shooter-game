@@ -12,7 +12,7 @@
 
 UShooterGameInstance::UShooterGameInstance(const FObjectInitializer& ObjectInitializer)
 {
-	ConstructorHelpers::FClassFinder<UUserWidget> MenuBPClass(TEXT("/Game/_Game/Menus/MultiMainMenuBP"));
+	ConstructorHelpers::FClassFinder<UUserWidget> MenuBPClass(TEXT("/Game/_Game/Menus/MultiMainMenuWidgetBP"));
 	if (MenuBPClass.Class)
 	{
 		MenuClass = MenuBPClass.Class;

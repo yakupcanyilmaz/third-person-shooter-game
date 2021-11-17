@@ -6,6 +6,8 @@
 #include "Components/WidgetComponent.h"
 #include "Components/SphereComponent.h"
 #include "ShooterCharacter.h"
+#include "Kismet/GameplayStatics.h"
+
 
 AAmmo::AAmmo():
 	AmmoType(EAmmoType::EAT_RifleAmmo)
@@ -67,10 +69,29 @@ void AAmmo::SetItemProperties(EItemState State)
 
 void AAmmo::EnableCustomDepth()
 {
+	ServerEnableAmmoMeshCustomDepth();
+}
+
+void AAmmo::ServerEnableAmmoMeshCustomDepth_Implementation()
+{
+	ClientEnableAmmoMeshCustomDepth();
+}
+
+void AAmmo::ClientEnableAmmoMeshCustomDepth_Implementation()
+{
 	AmmoMesh->SetRenderCustomDepth(true);
 }
 
 void AAmmo::DisableCustomDepth()
 {
 	AmmoMesh->SetRenderCustomDepth(false);
+}
+
+void AAmmo::OnPickup_Implementation()
+{
+	AShooterCharacter* ShooterCharacter = Cast<AShooterCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+	if (ShooterCharacter)
+	{
+		ShooterCharacter->DestroyItem(this);
+	}
 }
